@@ -1,0 +1,85 @@
+# Camoufox 0.1.19 — /dev/shm diagnostic
+#
+# Two services so you can run both back-to-back and compare output:
+#
+#   docker compose run --rm diag-default-shm   # 64 MB  — should hang at newPage()
+#   docker compose run --rm diag-large-shm     # 256 MB — should pass all scenarios
+#
+# Or run both sequentially:
+#   docker compose up
+#
+# K8s equivalent of diag-large-shm:
+#   volumes:
+#     - name: dshm
+#       emptyDir:
+#         medium: Memory
+#         sizeLimit: 256Mi
+#   containers:
+#     - volumeMounts:
+#         - name: dshm
+#           mountPath: /dev/shm
+
+services:
+
+  # ── Scenario A: default Docker /dev/shm (64 MB) ─────────────────────────────
+  # This is what the customer's container likely has.
+  # Firefox Fission / content-process IPC exhausts 64 MB → newPage() hangs.
+  diag-default-shm:
+    build: .
+    image: camoufox-shm-diag
+    container_name: camoufox-diag-default
+    # No shm_size override → Docker default = 64 MB
+    environment:
+      - SHM_SCENARIO=default-64mb
+    # Security options that match a typical restricted K8s pod.
+    # Remove these lines if your customer's pod is less restricted.
+    security_opt:
+      - seccomp:unconfined   # comment out to test with the default seccomp profile
+    # cap_drop:
+    #   - ALL                # uncomment to simulate a hardened pod
+
+  # ── Scenario B: enlarged /dev/shm (256 MB) ──────────────────────────────────
+  # Matches the K8s emptyDir medium:Memory fix.
+  # All five diagnostic scenarios should pass.
+  diag-large-shm:
+    build: .
+    image: camoufox-shm-diag
+    container_name: camoufox-diag-large
+    shm_size: '256mb'
+    environment:
+      - SHM_SCENARIO=large-256mb
+    security_opt:
+      - seccomp:unconfined
+
+  # ── Scenario C: MOZ_DISABLE_CONTENT_SANDBOX (env var at compose level) ───────
+  # Mirrors what the customer would add to their Render service environment.
+  # Redirects Firefox IPC socket from /dev/shm → /tmp, bypassing the cap.
+  # The script also tests this internally (scenario 4), but running it here
+  # confirms the env var is visible to the Firefox process through Docker.
+  diag-no-sandbox-env:
+    build: .
+    image: camoufox-shm-diag
+    container_name: camoufox-diag-no-sandbox
+    # No shm_size override — stays at 64 MB default to prove the env var alone fixes it.
+    environment:
+      - SHM_SCENARIO=no-sandbox-env
+      - MOZ_DISABLE_CONTENT_SANDBOX=1
+    security_opt:
+      - seccomp:unconfined
+
+  # ── Scenario E: --ipc=host (nuclear option) ──────────────────────────────────
+  # Shares the host's /dev/shm namespace entirely.
+  # Useful to confirm that shm is the *only* blocker.
+  # NOT suitable for production — every container can see host shm segments.
+  diag-ipc-host:
+    build: .
+    image: camoufox-shm-diag
+    container_name: camoufox-diag-ipc-host
+    ipc: host
+    environment:
+      - SHM_SCENARIO=ipc-host
+    security_opt:
+      - seccomp:unconfined
+    profiles:
+      # Only run this one explicitly:  docker compose run --rm diag-ipc-host
+      - ipc-host

@@ -1,0 +1,19 @@
+{
+  "name": "camoufox-shm-diag",
+  "version": "1.0.0",
+  "description": "Camoufox 0.1.19 /dev/shm newPage() hang diagnostic",
+  "main": "shm-diag.js",
+  "scripts": {
+    "diag": "node shm-diag.js",
+    "build": "docker compose build",
+    "run:default": "docker compose run --rm diag-default-shm",
+    "run:large": "docker compose run --rm diag-large-shm",
+    "run:ipc-host": "docker compose run --rm diag-ipc-host"
+  },
+  "dependencies": {
+    "camoufox": "0.1.19"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
