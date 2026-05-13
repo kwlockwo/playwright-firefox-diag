@@ -33,6 +33,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xvfb \
  && rm -rf /var/lib/apt/lists/*
 
+# ── Render SSH / shell access (Docker-specific requirements) ──────────────────
+# https://docs.render.com/ssh#docker-specific-configuration
+# 1. ~/.ssh must exist with chmod 0700
+# 2. Root account must not be locked (node:20-bookworm-slim locks it by default)
+RUN mkdir -p /root/.ssh && chmod 0700 /root/.ssh \
+ && passwd -u root || usermod --unlock root || true
+
 WORKDIR /app
 
 # ── node deps first (layer-cache friendly) ────────────────────────────────────
