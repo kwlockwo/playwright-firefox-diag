@@ -59,6 +59,12 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN npx playwright install firefox \
  && npx playwright install-deps firefox
 
+# ── pre-seed Camoufox binary ──────────────────────────────────────────────────
+# Without this, Camoufox throws "not installed" at runtime and prompts the user
+# to run `camoufox fetch` manually.  Baking it in at build time avoids the
+# download happening inside the container on Render.
+RUN npx camoufox fetch
+
 # ── diagnostic script ─────────────────────────────────────────────────────────
 COPY shm-diag.js ./
 
