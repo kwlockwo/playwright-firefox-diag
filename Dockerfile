@@ -60,10 +60,13 @@ RUN npx playwright install firefox \
  && npx playwright install-deps firefox
 
 # ── pre-seed Camoufox binary ──────────────────────────────────────────────────
-# Without this, Camoufox throws "not installed" at runtime and prompts the user
-# to run `camoufox fetch` manually.  Baking it in at build time avoids the
-# download happening inside the container on Render.
-RUN npx camoufox fetch
+# Direct download bypasses the GitHub releases API entirely (no token needed,
+# no rate limit).  Asset filename intentionally uses alpha.25 even though the
+# release tag is beta.25 — that is how the upstream release was published.
+#
+# To update: re-run the version-detection snippet in the README and replace
+# the URL below with the new browser_download_url.
+RUN apt-get update && apt-get install -y --no-install-recommends unzip  && rm -rf /var/lib/apt/lists/*  && curl -fsSL     https://github.com/daijro/camoufox/releases/download/v150.0.2-beta.25/camoufox-150.0.2-alpha.25-lin.x86_64.zip     -o /tmp/camoufox.zip  && mkdir -p /root/.cache/camoufox  && unzip -q /tmp/camoufox.zip -d /root/.cache/camoufox  && rm /tmp/camoufox.zip
 
 # ── diagnostic script ─────────────────────────────────────────────────────────
 COPY shm-diag.js ./
