@@ -72,7 +72,7 @@ RUN npm install --omit=dev
 #       }
 #     "
 RUN curl -fsSL \
-    https://github.com/daijro/camoufox/releases/download/v150.0.2-beta.25/camoufox-150.0.2-alpha.25-lin.x86_64.zip \
+    https://github.com/daijro/camoufox/releases/download/v150.0.2-beta.25/camoufox-150.0.2-alpha.26-lin.x86_64.zip \
     -o /tmp/camoufox.zip \
  && mkdir -p /root/.cache/camoufox \
  && unzip -q /tmp/camoufox.zip -d /root/.cache/camoufox \
